@@ -2,8 +2,6 @@ import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
 
 import ItemMaster from './ItemMaster.js';
-import ItemArmor from './ItemArmor.js';
-import ItemWeapon from './ItemWeapon.js';
 import MobMaster from './MobMaster.js';
 import MobDrop from './MobDrop.js';
 import MapMaster from './MapMaster.js';
