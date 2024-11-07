@@ -5,6 +5,7 @@ import itemRoutes from './routes/itemRoutes.js';
 import monsterRoutes from './routes/monsterRoutes.js';
 import mapRoutes from './routes/mapRoutes.js';
 import skillRoutes from './routes/skillRoutes.js';
+import searchRoutes from './routes/searchRoutes.js';
 
 dotenv.config();
 const app = express();
@@ -16,7 +17,7 @@ app.use('/api/item', itemRoutes);
 app.use('/api/monster', monsterRoutes);
 app.use('/api/map', mapRoutes);
 app.use('/api/skill', skillRoutes);
-
+app.use('/api/search', searchRoutes);
 // Sequelize 연결 확인 (루트 경로)
 app.get('/', async (req, res) => {
   try {
