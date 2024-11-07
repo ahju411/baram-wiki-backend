@@ -14,6 +14,7 @@ export const getSkillsByJob = async (req, res) => {
     // SkillMaster에서 특정 직업에 해당하는 스킬들을 조회
     const skills = await models.SkillMaster.findAll({
       where: { job },
+      order: [['level', 'ASC']],
       include: [
         {
           model: models.SkillDetail,
