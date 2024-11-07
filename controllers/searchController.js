@@ -1,8 +1,11 @@
 // controllers/searchController.js
 
 import { models } from '../models/index.js';
-import { Sequelize } from 'sequelize';
-import { isChoMatch } from '../utils/searchKorean.js';
+import { createFuzzyMatcher } from '../utils/searchKorean.js';
+import NodeCache from 'node-cache';
+
+// 캐시 인스턴스 생성 (TTL: 24시간)
+const cache = new NodeCache({ stdTTL: 86400 });
 
 /**
  * 검색 기능을 제공하는 컨트롤러
@@ -10,71 +13,88 @@ import { isChoMatch } from '../utils/searchKorean.js';
  * @param {Object} res - Express 응답 객체
  */
 export const searchAll = async (req, res) => {
-  const keyword = decodeURIComponent(req.query.keyword);
+	const keyword = decodeURIComponent(req.query.keyword);
 
-  if (!keyword) {
-    return res.status(400).json({ message: '검색어를 입력해 주세요.' });
-  }
+	// 첫 글자가 한글 완성형인지 체크
+	const isCompleteHangul = (char) => {
+		const code = char.charCodeAt(0);
+		return code >= 0xac00 && code <= 0xd7a3; // 완성형 한글 범위: 가(0xAC00) ~ 힣(0xD7A3)
+	};
 
-  try {
-    // 각 모델에 대해 데이터 가져오기
-    const [items, mobs, maps] = await Promise.all([
-      models.ItemMaster.findAll({
-        where: {
-          name: { [Sequelize.Op.like]: `%${keyword}%` },
-        },
-        attributes: ['id', 'name', 'iconUrl'],
-      }),
-      models.MobMaster.findAll({
-        where: {
-          name: { [Sequelize.Op.like]: `%${keyword}%` },
-        },
-        attributes: ['id', 'name', 'images'],
-      }),
-      models.MapMaster.findAll({
-        where: {
-          name: { [Sequelize.Op.like]: `%${keyword}%` },
-        },
-        attributes: ['id', 'name', 'images'],
-      }),
-    ]);
+	// 키워드가 비어있거나 첫 글자가 완성형 한글이 아닌 경우 빈 결과 반환
+	if (!keyword || !isCompleteHangul(keyword[0])) {
+		return res.status(200).json({ results: [] });
+	}
 
-    // 초성 검색 필터링
-    const filteredItems = items
-      .filter((item) => isChoMatch(keyword, item.name))
-      .map((item) => ({
-        id: item.id,
-        name: item.name,
-        image: item.iconUrl,
-        type: 'item',
-      }));
+	try {
+		// 캐시된 데이터 확인
+		let allData = cache.get('allMasterData');
 
-    const filteredMobs = mobs
-      .filter((mob) => isChoMatch(keyword, mob.name))
-      .map((mob) => ({
-        id: mob.id,
-        name: mob.name,
-        image: mob.images,
-        type: 'monster',
-      }));
+		if (!allData) {
+			// 캐시가 없을 경우에만 DB 조회
+			const [items, mobs, maps] = await Promise.all([
+				models.ItemMaster.findAll({
+					attributes: ['id', 'name', 'images'],
+				}),
+				models.MobMaster.findAll({
+					attributes: ['id', 'name', 'images'],
+				}),
+				models.MapMaster.findAll({
+					attributes: ['id', 'name', 'images'],
+				}),
+			]);
 
-    const filteredMaps = maps
-      .filter((map) => isChoMatch(keyword, map.name))
-      .map((map) => ({
-        id: map.id,
-        name: map.name,
-        image: map.images,
-        type: 'map',
-      }));
+			allData = {
+				items,
+				mobs,
+				maps,
+			};
 
-    // 통합된 응답 데이터 구성
-    const responseData = {
-      results: [...filteredItems, ...filteredMobs, ...filteredMaps],
-    };
+			// 데이터 캐싱
+			cache.set('allMasterData', allData);
+		}
 
-    return res.status(200).json(responseData);
-  } catch (error) {
-    console.error('Error during search:', error);
-    return res.status(500).json({ message: '검색 중 문제가 발생했습니다.' });
-  }
+		// 메모리에서 필터링 수행
+		const pattern = createFuzzyMatcher(keyword);
+
+		const filteredItems = allData.items
+			.filter((item) => pattern.test(item.name))
+			.map((item) => ({
+				id: item.id,
+				name: item.name,
+				image: item.images,
+				type: 'item',
+			}))
+			.slice(0, 10);
+
+		const filteredMobs = allData.mobs
+			.filter((mob) => pattern.test(mob.name))
+			.map((mob) => ({
+				id: mob.id,
+				name: mob.name,
+				image: mob.images,
+				type: 'monster',
+			}))
+			.slice(0, 10);
+
+		const filteredMaps = allData.maps
+			.filter((map) => pattern.test(map.name))
+			.map((map) => ({
+				id: map.id,
+				name: map.name,
+				image: map.images,
+				type: 'map',
+			}))
+			.slice(0, 10);
+
+		// 통합된 응답 데이터 구성
+		const responseData = {
+			results: [...filteredItems, ...filteredMobs, ...filteredMaps],
+		};
+
+		return res.status(200).json(responseData);
+	} catch (error) {
+		console.error('Error during search:', error);
+		return res.status(500).json({ message: '검색 중 문제가 발생했습니다.' });
+	}
 };
