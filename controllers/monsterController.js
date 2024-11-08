@@ -23,7 +23,6 @@ export const getMonsterById = async (req, res) => {
 					],
 					attributes: ['item_id', 'range', 'vals'],
 				},
-				// 필요한 다른 관계가 있다면 추가로 include 할 수 있습니다.
 			],
 			attributes: [
 				'id',
@@ -45,6 +44,11 @@ export const getMonsterById = async (req, res) => {
 			return res.status(404).json({ message: '몬스터를 찾을 수 없습니다.' });
 		}
 
+		// respawn(map_id)에 해당하는 맵 정보 조회
+		const mapInfo = await models.MapMaster.findByPk(monster.respawn, {
+			attributes: ['name', 'images'],
+		});
+
 		// 응답 데이터 구성
 		const responseData = {
 			id: monster.id,
@@ -59,6 +63,8 @@ export const getMonsterById = async (req, res) => {
 			respawn: monster.respawn,
 			information: monster.information,
 			images: monster.images,
+			map_name: mapInfo ? mapInfo.name : null,
+			map_images: mapInfo ? mapInfo.images : null,
 			drops: monster.MobDrops.map((drop) => ({
 				item_id: drop.item_id,
 				range: drop.range,
