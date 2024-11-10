@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
 import { sequelize } from './models/index.js'; // sequelize와 models를 가져옵니다.
 import itemRoutes from './routes/itemRoutes.js';
@@ -14,10 +13,6 @@ const app = express();
 
 app
     .use(express.json())
-    .use(cors({
-      origin: 'http://localhost:3000'
-    }));
-
 // 라우트 설정
 app.use('/api/item', itemRoutes);
 app.use('/api/monster', monsterRoutes);
