@@ -88,8 +88,17 @@ export const getMapById = async (req, res) => {
  * @param {Object} res - Express 응답 객체
  */
 export const getMapsGroupByLevel = async (req, res) => {
+	const { range } = req.query;
 	try {
+		// range 파라미터 검증
+		if (!range || !['1', '2', '3'].includes(range)) {
+			return res.status(400).json({ message: '유효하지 않은 range 값입니다.' });
+		}
+
 		const maps = await models.MapMaster.findAll({
+			where: {
+				type: range, // range 값으로 type 필터링
+			},
 			include: [
 				{
 					model: models.MapRespawn,
@@ -119,8 +128,8 @@ export const getMapsGroupByLevel = async (req, res) => {
 					],
 				},
 			],
-			order: [['level', 'ASC']],
-			attributes: ['id', 'name', 'level', 'information', 'images'],
+			order: [['level', 'ASC']], // 레벨 순으로 정렬
+			attributes: ['id', 'name', 'level', 'information', 'images', 'type'],
 		});
 
 		const responseData = maps.map((map) => {
