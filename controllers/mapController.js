@@ -129,7 +129,16 @@ export const getMapsGroupByLevel = async (req, res) => {
 				},
 			],
 			order: [['level', 'ASC']], // 레벨 순으로 정렬
-			attributes: ['id', 'name', 'level', 'information', 'images', 'type'],
+			attributes: [
+				'id',
+				'name',
+				'level',
+				'information',
+				'xcoord',
+				'ycoord',
+				'images',
+				'type',
+			],
 		});
 
 		const responseData = maps.map((map) => {
@@ -169,6 +178,8 @@ export const getMapsGroupByLevel = async (req, res) => {
 				level: map.level,
 				information: map.information,
 				images: map.images,
+				xcoord: map.xcoord,
+				ycoord: map.ycoord,
 				monsters: monsters,
 			};
 		});

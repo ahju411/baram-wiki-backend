@@ -14,6 +14,8 @@ export default (sequelize) => {
 			},
 			level: DataTypes.CHAR(50),
 			type: DataTypes.NUMBER,
+			xcoord: DataTypes.NUMBER,
+			ycoord: DataTypes.NUMBER,
 			information: DataTypes.STRING(3000),
 			images: DataTypes.STRING(3000),
 		},
