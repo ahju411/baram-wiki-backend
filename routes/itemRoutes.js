@@ -1,6 +1,6 @@
 // routes/itemRoutes.js
 import express from 'express';
-import { getItemById } from '../controllers/itemController.js';
+import {getItemById} from '../controllers/itemController.js';
 
 const router = express.Router();
 

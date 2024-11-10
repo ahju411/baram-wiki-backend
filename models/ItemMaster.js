@@ -31,6 +31,7 @@ export default (sequelize) => {
 				type: DataTypes.INTEGER,
 				allowNull: true,
 				comment: '아이템 타입 코드',
+				field: '`type`'
 			},
 			iconId: {
 				type: DataTypes.INTEGER,
