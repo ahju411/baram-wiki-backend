@@ -37,6 +37,10 @@ const models = {
 	SkillDetail: SkillDetail(sequelize),
 };
 
+models.Sequelize = Sequelize;
+models.Op = Sequelize.Op;
+
+
 // 모델 관계 설정
 
 // MobMaster와 MobDrop 간의 관계
