@@ -8,6 +8,7 @@ import MapMaster from './MapMaster.js';
 import MapRespawn from './MapRespawn.js';
 import SkillMaster from './SkillMaster.js';
 import SkillDetail from './SkillDetail.js';
+import Exp from './Exp.js';
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ const models = {
 	MapRespawn: MapRespawn(sequelize),
 	SkillMaster: SkillMaster(sequelize),
 	SkillDetail: SkillDetail(sequelize),
+	Exp: Exp(sequelize)
 };
 
 models.Sequelize = Sequelize;

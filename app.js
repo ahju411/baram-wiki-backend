@@ -7,6 +7,7 @@ import mapRoutes from './routes/mapRoutes.js';
 import skillRoutes from './routes/skillRoutes.js';
 import searchRoutes from './routes/searchRoutes.js';
 import allItemRoutes from './routes/allItemRoutes.js';
+import levelRoute from './routes/levelRoute.js';
 
 dotenv.config();
 const app = express();
@@ -19,6 +20,7 @@ app.use('/api/map', mapRoutes);
 app.use('/api/skill', skillRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/allitem', allItemRoutes);
+app.use('/api/level', levelRoute);
 
 // Sequelize 연결 확인 (루트 경로)
 app.get('/', async (req, res) => {
