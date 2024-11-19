@@ -10,6 +10,7 @@ import { Op } from 'sequelize';
  */
 export const getItemById = async (req, res) => {
 	const { id } = req.params;
+	const ip = req.ip || req.connection.remoteAddress;
 
 	try {
 		// 기본 아이템 정보 조회
@@ -33,6 +34,7 @@ export const getItemById = async (req, res) => {
 		// 아이템 조회 시 로그 기록
 		await models.ItemViewLog.create({
 			item_id: id,
+			ip_address: ip,
 		});
 
 		// 재료 정보 조회
@@ -43,9 +45,9 @@ export const getItemById = async (req, res) => {
 				im2.name,
 				im2.images,
 				ic1.vals as quantity
-			FROM ITEM_COMP ic1
-			JOIN ITEM_MASTER im2 ON ic1.item_id = im2.id
-			WHERE ic1.comp_id = :id
+				FROM ITEM_COMP ic1
+				JOIN ITEM_MASTER im2 ON ic1.item_id = im2.id
+				WHERE ic1.comp_id = :id
 		`,
 			{
 				replacements: { id },
