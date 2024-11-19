@@ -9,6 +9,7 @@ import MapRespawn from './MapRespawn.js';
 import SkillMaster from './SkillMaster.js';
 import SkillDetail from './SkillDetail.js';
 import Exp from './Exp.js';
+import ItemViewLog from './ItemViewLog.js';
 import ItemComp from './ItemComp.js';
 
 dotenv.config();
@@ -38,7 +39,7 @@ const models = {
 	SkillMaster: SkillMaster(sequelize),
 	SkillDetail: SkillDetail(sequelize),
 	Exp: Exp(sequelize),
-	SearchLog: SearchLog(sequelize),
+	ItemViewLog: ItemViewLog(sequelize),
 	ItemComp: ItemComp(sequelize),
 };
 
@@ -115,6 +116,16 @@ models.SkillDetail.belongsTo(models.ItemMaster, {
 	targetKey: 'id',
 });
 models.ItemMaster.hasMany(models.SkillDetail, {
+	foreignKey: 'item_id',
+	sourceKey: 'id',
+});
+
+// ItemViewLog와 ItemMaster 간의 관계
+models.ItemViewLog.belongsTo(models.ItemMaster, {
+	foreignKey: 'item_id',
+	targetKey: 'id',
+});
+models.ItemMaster.hasMany(models.ItemViewLog, {
 	foreignKey: 'item_id',
 	sourceKey: 'id',
 });
