@@ -10,7 +10,11 @@ import { Op } from 'sequelize';
  */
 export const getItemById = async (req, res) => {
 	const { id } = req.params;
-	const ip = req.ip || req.connection.remoteAddress;
+	const ip =
+		req.headers['x-real-ip'] ||
+		req.headers['x-forwarded-for']?.split(',')[0] ||
+		req.ip ||
+		'0.0.0.0';
 
 	try {
 		// 기본 아이템 정보 조회
@@ -118,7 +122,7 @@ export const getPopularItems = async (req, res) => {
 			],
 			where: {
 				created_at: {
-					[Op.gte]: new Date(Date.now() - 24 * 60 * 60 * 1000 * 3), // 최근 3일
+					[Op.gte]: new Date(Date.now() - 24 * 60 * 60 * 1000 * 1), // 최근 1일
 				},
 			},
 			group: ['ItemViewLog.item_id', 'ItemMaster.id'],
