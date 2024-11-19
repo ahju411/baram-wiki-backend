@@ -13,9 +13,13 @@ export default (sequelize) => {
 				type: DataTypes.CHAR(50),
 				allowNull: false,
 			},
+			ip_address: {
+				type: DataTypes.STRING(45),
+				allowNull: true,
+			},
 			created_at: {
 				type: DataTypes.DATE,
-				defaultValue: DataTypes.NOW,
+				defaultValue: sequelize.fn('NOW'),
 			},
 		},
 		{
