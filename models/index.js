@@ -9,6 +9,7 @@ import MapRespawn from './MapRespawn.js';
 import SkillMaster from './SkillMaster.js';
 import SkillDetail from './SkillDetail.js';
 import Exp from './Exp.js';
+import ItemComp from './ItemComp.js';
 
 dotenv.config();
 
@@ -36,12 +37,14 @@ const models = {
 	MapRespawn: MapRespawn(sequelize),
 	SkillMaster: SkillMaster(sequelize),
 	SkillDetail: SkillDetail(sequelize),
-	Exp: Exp(sequelize)
+	Exp: Exp(sequelize),
+	SearchLog: SearchLog(sequelize),
+	ItemComp: ItemComp(sequelize),
 };
 
+models.sequelize = sequelize;
 models.Sequelize = Sequelize;
 models.Op = Sequelize.Op;
-
 
 // 모델 관계 설정
 
@@ -63,6 +66,29 @@ models.ItemMaster.hasMany(models.MobDrop, {
 models.MobDrop.belongsTo(models.ItemMaster, {
 	foreignKey: 'item_id',
 	targetKey: 'id',
+});
+// ItemMaster와 ItemComp 간의 관계
+models.ItemMaster.hasMany(models.ItemComp, {
+	foreignKey: 'comp_id',
+	sourceKey: 'id',
+	as: 'Ingredients',
+});
+models.ItemComp.belongsTo(models.ItemMaster, {
+	foreignKey: 'comp_id',
+	targetKey: 'id',
+	as: 'ResultItem',
+});
+
+// 2. 아이템이 재료인 경우 (item_id 기준)
+models.ItemMaster.hasMany(models.ItemComp, {
+	foreignKey: 'item_id',
+	sourceKey: 'id',
+	as: 'UsedInRecipes',
+});
+models.ItemComp.belongsTo(models.ItemMaster, {
+	foreignKey: 'item_id',
+	targetKey: 'id',
+	as: 'IngredientItem',
 });
 
 // MapMaster와 MapRespawn 간의 관계
