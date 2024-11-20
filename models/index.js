@@ -25,7 +25,9 @@ const sequelize = new Sequelize(
 		logging: false, // 디버깅 시 true로 변경 가능
 		dialectOptions: {
 			connectTimeout: 10000,
+			timezone: '+09:00',
 		},
+		timezone: '+09:00',
 	}
 );
 
@@ -80,7 +82,7 @@ models.ItemComp.belongsTo(models.ItemMaster, {
 	as: 'ResultItem',
 });
 
-// 2. 아이템이 재료인 경우 (item_id 기준)
+// 2. 아��템이 재료인 경우 (item_id 기준)
 models.ItemMaster.hasMany(models.ItemComp, {
 	foreignKey: 'item_id',
 	sourceKey: 'id',
