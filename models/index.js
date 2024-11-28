@@ -1,17 +1,19 @@
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
 
-import ItemMaster from './ItemMaster.js';
-import MobMaster from './MobMaster.js';
-import MobDrop from './MobDrop.js';
-import MapMaster from './MapMaster.js';
-import MapRespawn from './MapRespawn.js';
-import SkillMaster from './SkillMaster.js';
-import SkillDetail from './SkillDetail.js';
+import ItemMaster from './item/ItemMaster.js';
+import ItemViewLog from './item/ItemViewLog.js';
+import ItemComp from './item/ItemComp.js';
+import MobMaster from './mob/MobMaster.js';
+import MobDrop from './mob/MobDrop.js';
+import MapMaster from './map/MapMaster.js';
+import MapRespawn from './map/MapRespawn.js';
+import MapMasterNew from './map/MapMasterNew.js';
+import MapPort from './map/MapPort.js';
+import MapNpc from './map/MapNpc.js';
+import SkillMaster from './skill/SkillMaster.js';
+import SkillDetail from './skill/SkillDetail.js';
 import Exp from './Exp.js';
-import ItemViewLog from './ItemViewLog.js';
-import ItemComp from './ItemComp.js';
-
 dotenv.config();
 
 const sequelize = new Sequelize(
@@ -43,6 +45,9 @@ const models = {
 	Exp: Exp(sequelize),
 	ItemViewLog: ItemViewLog(sequelize),
 	ItemComp: ItemComp(sequelize),
+	MapMasterNew: MapMasterNew(sequelize),
+	MapPort: MapPort(sequelize),
+	MapNpc: MapNpc(sequelize),
 };
 
 models.sequelize = sequelize;
@@ -82,7 +87,7 @@ models.ItemComp.belongsTo(models.ItemMaster, {
 	as: 'ResultItem',
 });
 
-// 2. 아��템이 재료인 경우 (item_id 기준)
+// 2. 아이템이 재료인 경우 (item_id 기준)
 models.ItemMaster.hasMany(models.ItemComp, {
 	foreignKey: 'item_id',
 	sourceKey: 'id',
@@ -101,6 +106,34 @@ models.MapRespawn.belongsTo(models.MapMaster, { foreignKey: 'map_id' });
 // MapRespawn과 MobMaster 간의 관계
 models.MapRespawn.belongsTo(models.MobMaster, { foreignKey: 'mob_id' });
 models.MobMaster.hasMany(models.MapRespawn, { foreignKey: 'mob_id' });
+
+// MapMasterNew와 MapPort 간의 관계
+models.MapMasterNew.hasMany(models.MapPort, {
+	foreignKey: 'f_map_id',
+	as: 'ForwardPorts',
+});
+models.MapMasterNew.hasMany(models.MapPort, {
+	foreignKey: 'b_map_id',
+	as: 'BackwardPorts',
+});
+models.MapPort.belongsTo(models.MapMasterNew, {
+	foreignKey: 'f_map_id',
+	as: 'ForwardMap',
+});
+models.MapPort.belongsTo(models.MapMasterNew, {
+	foreignKey: 'b_map_id',
+	as: 'BackwardMap',
+});
+
+// MapMasterNew와 MapNpc 간의 관계
+models.MapMasterNew.hasMany(models.MapNpc, {
+	foreignKey: 'map_id',
+	as: 'Npcs',
+});
+models.MapNpc.belongsTo(models.MapMasterNew, {
+	foreignKey: 'map_id',
+	as: 'Map',
+});
 
 // SkillMaster와 SkillDetail 간의 관계
 models.SkillMaster.hasMany(models.SkillDetail, {
