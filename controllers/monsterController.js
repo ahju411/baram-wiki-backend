@@ -1,6 +1,7 @@
 // controllers/monsterController.js
 
 import { models } from '../models/index.js';
+import { Sequelize } from 'sequelize';
 
 /**
  * 특정 몬스터 ID에 대한 상세 정보를 가져오는 컨트롤러
@@ -11,19 +12,8 @@ export const getMonsterById = async (req, res) => {
 	const { id } = req.params;
 
 	try {
-		// MobMaster 모델에서 특정 ID로 몬스터 조회
+		// 먼저 몬스터 기본 정보 조회
 		const monster = await models.MobMaster.findByPk(id, {
-			include: [
-				{
-					model: models.MobDrop,
-					include: [
-						{
-							model: models.ItemMaster,
-						},
-					],
-					attributes: ['item_id', 'range', 'vals'],
-				},
-			],
 			attributes: [
 				'id',
 				'name',
@@ -34,9 +24,11 @@ export const getMonsterById = async (req, res) => {
 				'defense',
 				'mdefense',
 				'mtype',
-				'respawn',
+				'mindamage',
+				'maxdamage',
 				'information',
 				'images',
+				'respawn',
 			],
 		});
 
@@ -44,7 +36,23 @@ export const getMonsterById = async (req, res) => {
 			return res.status(404).json({ message: '몬스터를 찾을 수 없습니다.' });
 		}
 
-		// respawn(map_id)에 해당하는 맵 정보 조회
+		// 드롭 아이템 정보를 별도로 조회 (그룹화 제거)
+		const drops = await models.MobDrop.findAll({
+			where: { mob_id: id },
+			include: [
+				{
+					model: models.ItemMaster,
+					required: false,
+				},
+			],
+			attributes: ['item_id', 'range', 'vals'],
+			order: [
+				['item_id', 'ASC'],
+				['range', 'DESC'],
+			],
+		});
+
+		// 맵 정보 조회 추가
 		const mapInfo = await models.MapMaster.findByPk(monster.respawn, {
 			attributes: ['name', 'images'],
 		});
@@ -60,65 +68,24 @@ export const getMonsterById = async (req, res) => {
 			defense: monster.defense,
 			mdefense: monster.mdefense,
 			mtype: monster.mtype,
-			respawn: monster.respawn,
+			mindamage: monster.mindamage,
+			maxdamage: monster.maxdamage,
 			information: monster.information,
 			images: monster.images,
+			respawn: monster.respawn,
 			map_name: mapInfo ? mapInfo.name : null,
 			map_images: mapInfo ? mapInfo.images : null,
-			drops: monster.MobDrops.map((drop) => ({
+			drops: drops.map((drop) => ({
 				item_id: drop.item_id,
 				range: drop.range,
 				vals: drop.vals,
-				item: drop.ItemMaster
-					? {
-							id: drop.ItemMaster.id,
-							bid: drop.ItemMaster.bid,
-							code: drop.ItemMaster.code,
-							name: drop.ItemMaster.name,
-							type: drop.ItemMaster.type,
-							iconId: drop.ItemMaster.iconId,
-							iconUrl: drop.ItemMaster.iconUrl,
-							avatarId: drop.ItemMaster.avatarId,
-							dye: drop.ItemMaster.dye,
-							maxquan: drop.ItemMaster.maxquan,
-							maxdura: drop.ItemMaster.maxdura,
-							price: drop.ItemMaster.price,
-							reqmight: drop.ItemMaster.reqmight,
-							reqwill: drop.ItemMaster.reqwill,
-							reqgrace: drop.ItemMaster.reqgrace,
-							reqgender: drop.ItemMaster.reqgender,
-							reqlevel: drop.ItemMaster.reqlevel,
-							reqjob: drop.ItemMaster.reqjob,
-							ondead: drop.ItemMaster.ondead,
-							trade: drop.ItemMaster.trade,
-							repair: drop.ItemMaster.repair,
-							repairprice: drop.ItemMaster.repairprice,
-							storageprice: drop.ItemMaster.storageprice,
-							namingprice: drop.ItemMaster.namingprice,
-							desc: drop.ItemMaster.desc,
-							smin: drop.ItemMaster.smin,
-							smax: drop.ItemMaster.smax,
-							lmin: drop.ItemMaster.lmin,
-							lmax: drop.ItemMaster.lmax,
-							ac: drop.ItemMaster.ac,
-							MHP: drop.ItemMaster.MHP,
-							MMP: drop.ItemMaster.MMP,
-							hit: drop.ItemMaster.hit,
-							dam: drop.ItemMaster.dam,
-							M: drop.ItemMaster.M,
-							W: drop.ItemMaster.W,
-							G: drop.ItemMaster.G,
-							hr: drop.ItemMaster.hr,
-							md: drop.ItemMaster.md,
-							swingsound: drop.ItemMaster.swingsound,
-							images: drop.ItemMaster.images,
-					  }
-					: null,
+				item: drop.ItemMaster,
 			})),
 		};
 
 		return res.status(200).json(responseData);
 	} catch (error) {
+		console.error('Error:', error);
 		return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
 	}
 };
