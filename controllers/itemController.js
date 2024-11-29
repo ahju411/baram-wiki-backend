@@ -80,7 +80,7 @@ export const getItemById = async (req, res) => {
 		// 몬스터 드롭 정보 조회
 		const monsterDrops = await models.sequelize.query(
 			`
-			SELECT 
+			SELECT DISTINCT
 				mm.id,
 				mm.name,
 				mm.images

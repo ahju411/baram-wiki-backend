@@ -216,3 +216,65 @@ export const getMapsGroupByLevel = async (req, res) => {
 		return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
 	}
 };
+
+/**
+ * 전체 메인 맵 목록을 가져오는 컨트롤러
+ */
+export const getAllMainMaps = async (req, res) => {
+	try {
+		const mainMaps = await models.MapMasterNew.findAll({
+			where: {
+				main: 'y',
+			},
+		});
+
+		if (!mainMaps || mainMaps.length === 0) {
+			return res
+				.status(404)
+				.json({ message: '메인 맵 정보를 찾을 수 없습니다.' });
+		}
+
+		return res.status(200).json(mainMaps);
+	} catch (error) {
+		console.error('Error fetching main maps:', error);
+		return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+	}
+};
+
+/**
+ * 특정 메인 맵의 상세 정보를 가져오는 컨트롤러
+ */
+export const getMainMapDetail = async (req, res) => {
+	const { id } = req.params;
+
+	try {
+		const mapDetail = await models.MapMasterNew.findOne({
+			where: {
+				id,
+			},
+			include: [
+				{
+					model: models.MapPort,
+					as: 'ForwardPorts',
+					required: false,
+				},
+				{
+					model: models.MapNpc,
+					as: 'Npcs',
+					required: false,
+				},
+			],
+		});
+
+		if (!mapDetail) {
+			return res
+				.status(404)
+				.json({ message: '해당 메인 맵을 찾을 수 없습니다.' });
+		}
+
+		return res.status(200).json(mapDetail);
+	} catch (error) {
+		console.error('Error fetching main map detail:', error);
+		return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+	}
+};
