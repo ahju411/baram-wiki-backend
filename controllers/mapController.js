@@ -1,6 +1,8 @@
 // controllers/mapController.js
 
 import { models } from '../models/index.js';
+import { buildGraph } from '../utils/graphBuilder.js';
+import { bfs } from '../utils/bfs.js';
 
 /**
  * 특정 맵 ID에 대한 상세 정보를 가져오는 컨트롤러
@@ -278,3 +280,46 @@ export const getMainMapDetail = async (req, res) => {
 		return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
 	}
 };
+
+/**
+ * 경로 찾기 기능을 구현하기 위한 컨트롤러
+ */
+export const findPath = async (req, res) => {
+	const { start_name, start_map_id, end_name, end_map_id } = req.query;
+  
+	try {
+	  if (!start_name || !start_map_id || !end_name || !end_map_id) {
+		return res.status(400).json({ message: 'start_name, start_map_id, end_name, end_map_id 파라미터를 제공해주세요.' });
+	  }
+  
+	  const start = `${start_name}_${start_map_id}`;
+	  const end = `${end_name}_${end_map_id}`;
+  
+	  const mapPorts = await models.MapPort.findAll();
+  
+	  const graph = buildGraph(mapPorts);
+  
+	  if (!graph[start]) {
+		return res.status(404).json({ message: `시작점 '${start_name}'을(를) 찾을 수 없습니다.` });
+	  }
+	  if (!graph[end]) {
+		return res.status(404).json({ message: `도착점 '${end_name}'을(를) 찾을 수 없습니다.` });
+	  }
+  
+	  const path = bfs(graph, start, end);
+  
+	  if (path) {
+		const readablePath = path.map(nodeId => {
+		  const [name, mapId] = nodeId.split('_');
+		  return { name, mapId };
+		});
+		return res.status(200).json({ path: readablePath });
+	  } else {
+		return res.status(404).json({ message: '경로를 찾을 수 없습니다.' });
+	  }
+	} catch (error) {
+	  console.error('Error finding path:', error);
+	  return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+	}
+  };
+  
