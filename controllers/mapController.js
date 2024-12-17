@@ -1,6 +1,8 @@
 // controllers/mapController.js
 
 import { models } from '../models/index.js';
+import { buildGraph } from '../utils/graphBuilder.js';
+import { bfs } from '../utils/bfs.js';
 
 /**
  * 특정 맵 ID에 대한 상세 정보를 가져오는 컨트롤러
@@ -38,7 +40,7 @@ export const getMapById = async (req, res) => {
 					],
 					attributes: ['mob_id'],
 				},
-				// 필요한 다른 관계가 있다면 추가로 include 할 수 있습니다.
+				// 필요한 계가 있다면 추가로 include 할 수 있습니다.
 			],
 			attributes: ['id', 'name', 'level', 'information', 'images'],
 		});
@@ -91,7 +93,12 @@ export const getMapsGroupByLevel = async (req, res) => {
 	const { range } = req.query;
 	try {
 		// range 파라미터 검증
-		if (!range || !['1', '2', '3'].includes(range)) {
+		if (
+			!range ||
+			!['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'].includes(
+				range
+			)
+		) {
 			return res.status(400).json({ message: '유효하지 않은 range 값입니다.' });
 		}
 
@@ -275,6 +282,122 @@ export const getMainMapDetail = async (req, res) => {
 		return res.status(200).json(mapDetail);
 	} catch (error) {
 		console.error('Error fetching main map detail:', error);
+		return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+	}
+};
+
+/**
+ * 맵 검색 컨트롤러
+ */
+export const searchMaps = async (req, res) => {
+	const { keyword } = req.query;
+
+	try {
+		if (!keyword) {
+			return res.status(400).json({ message: '검색어를 입력해주세요.' });
+		}
+
+		const maps = await models.MapMasterNew.findAll({
+			where: {
+				name: {
+					[models.Sequelize.Op.like]: `%${keyword}%`,
+				},
+			},
+			attributes: ['name'],
+			limit: 10,
+		});
+
+		// 검색 결과가 없을 경우
+		if (maps.length === 0) {
+			return res.status(200).json([]);
+		}
+
+		// name만 추출하고 글자 수 기준으로 정렬
+		const mapNames = maps
+			.map((map) => map.name)
+			.sort((a, b) => a.length - b.length);
+
+		return res.status(200).json(mapNames);
+	} catch (error) {
+		console.error('Error searching maps:', error);
+		return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+	}
+};
+
+/**
+ * 경로 찾기 기능 수정
+ */
+export const findPath = async (req, res) => {
+	const { start_name, end_name } = req.query;
+
+	try {
+		if (!start_name || !end_name) {
+			return res.status(400).json({
+				message: 'start_name과 end_name 파라미터를 제공해주세요.',
+			});
+		}
+
+		// 맵 정보와 포트 정보를 함께 가져옴
+		const mapPorts = await models.MapPort.findAll({
+			include: [
+				{
+					model: models.MapMasterNew,
+					as: 'ForwardMap',
+					attributes: ['id', 'name'],
+				},
+				{
+					model: models.MapMasterNew,
+					as: 'BackwardMap',
+					attributes: ['id', 'name'],
+				},
+			],
+		});
+
+		// 맵 이름으로 ID를 찾기 위한 매핑 생성
+		const nameToIdMap = new Map();
+		mapPorts.forEach((port) => {
+			if (port.ForwardMap) {
+				nameToIdMap.set(port.f_name, port.ForwardMap.id);
+			}
+			if (port.BackwardMap) {
+				nameToIdMap.set(port.b_name, port.BackwardMap.id);
+			}
+		});
+
+		const graph = buildGraph(mapPorts);
+
+		if (!graph[start_name]) {
+			return res.status(404).json({
+				message: `시작점 '${start_name}'을(를) 찾을 수 없습니다.`,
+			});
+		}
+		if (!graph[end_name]) {
+			return res.status(404).json({
+				message: `도착점 '${end_name}'을(를) 찾을 수 없습니다.`,
+			});
+		}
+
+		const paths = bfs(graph, start_name, end_name);
+
+		if (paths && paths.length > 0) {
+			const formattedPaths = paths.map((path, index) => ({
+				route_number: index + 1,
+				path: path.map((name) => ({
+					name: name,
+					id: nameToIdMap.get(name) || null,
+				})),
+				steps: path.length - 1,
+			}));
+
+			return res.status(200).json({
+				total_routes: paths.length,
+				paths: formattedPaths,
+			});
+		} else {
+			return res.status(404).json({ message: '경로를 찾을 수 없습니다.' });
+		}
+	} catch (error) {
+		console.error('Error finding path:', error);
 		return res.status(500).json({ message: '서버 오류가 발생했습니다.' });
 	}
 };
